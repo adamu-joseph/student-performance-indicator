@@ -24,7 +24,7 @@ Make sure you have the following installed:
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/adamu-joseph/first-ml-project
+git clone https://github.com/adamu-joseph/student-performance-indicator
 cd first-ml-project
 ```
 
