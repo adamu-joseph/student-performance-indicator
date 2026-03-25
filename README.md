@@ -47,7 +47,6 @@ pip install -r requirements.txt
 
 ## Jupyter Notebook Setup
 ```bash
-pip install jupyter ipykernel
 python -m ipykernel install --user --name=student_performance
 ```
 
