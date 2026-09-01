@@ -1,0 +1,94 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Code Quality & Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.14"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Upgrade pip, setuptools, and wheel
+        run: python -m pip install --upgrade pip setuptools wheel
+
+      - name: Install project with all dependencies
+        run: pip install -e .
+
+      # ==================== LINTING ====================
+      - name: Run Black (Format Check)
+        run: black --check src/ --line-length=88
+        continue-on-error: false
+
+      - name: Run Ruff (Bug Detection)
+        run: ruff check src/ --output-format=github
+        continue-on-error: false
+
+      # ==================== TYPE CHECKING ====================
+      - name: Run MyPy (Type Checking)
+        run: mypy src/ --python-version 3.14
+        continue-on-error: false
+
+      # ==================== TESTING ====================
+      - name: Run Pytest
+        run: pytest tests/ -v --tb=short --color=yes
+        continue-on-error: false
+
+      # ==================== SECURITY ====================
+      - name: Run Bandit (Security Scan)
+        run: bandit -r src/ -ll --format=json -o bandit-report.json
+        continue-on-error: false
+
+      - name: Run pip-audit (Dependency Scan)
+        run: pip-audit --skip-editable --format=json -o audit-report.json
+        continue-on-error: false
+
+      # ==================== ARTIFACTS ====================
+      - name: Upload Coverage Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: htmlcov/
+          retention-days: 30
+
+      - name: Upload Security Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            audit-report.json
+          retention-days: 30
+
+      # ==================== SUMMARY ====================
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## CI Pipeline Results ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python**: ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp**: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_STEP_SUMMARY
