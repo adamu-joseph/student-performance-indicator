@@ -1,7 +1,9 @@
 # Student Performance Indicator 🎓
 
 ## 📌 Project Overview
+
 This project analyzes student performance and predicts test scores based on factors like:
+
 - gender
 - ethnicity
 - Parental education
@@ -13,57 +15,24 @@ This project analyzes student performance and predicts test scores based on fact
 ### Features
 
 ## Requirements
+
 Make sure you have the following installed:
-- Python 3.8+
-- Anaconda or Miniconda
+
+- Python 3.14+
+- pip
 - Jupyter Notebook or VS Code
+- git
 
 ---
 
 ## Installation
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/adamu-joseph/student-performance-indicator
-cd first-ml-project
-```
-
-### 2. Create a virtual environment
-```bash
-conda create --name student_performance python=3.8
-```
-
-### 3. Activate the environment
-```bash
-conda activate student_performance
-```
-
-### 4. Install dependencies
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## Jupyter Notebook Setup
-```bash
-python -m ipykernel install --user --name=student_performance
-```
-
-Then:
-- Open the notebook
-- Click "Select Kernel" at the top right
-- Choose "student_performance"
-
----
-
-## Usage
-- Open the `notebooks/eda.ipynb` file
-- Run all cells to explore the dataset and visualizations
+> Find detailed installation instructions in the [developer guide](docs/developer-guide.md)
 
 ---
 
 ## License
+
 MIT License
 
 Copyright (c) 2026 Adamu (Codex) Joseph
@@ -90,6 +59,7 @@ SOFTWARE.
 ---
 
 ## Acknowledgements
+
 - Krish Naik (Youtuber) - https://youtu.be/Rv6UFGNmNZg
 - Dataset source: https://www.kaggle.com/datasets/spscientist/students-performance-in-exams?datasetID=74977
 - Inspired by my AI mentor; ISrael (Aidol) Adegoke - https://www.linkedin.com/in/israeladegoke-aidol/
