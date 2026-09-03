@@ -37,6 +37,8 @@ dependencies = [
     "pre-commit",
     "types-PyYAML",
     "pytest",
+    "bandit",
+    "pip-audit",
 ]
 
 [tool.black]
