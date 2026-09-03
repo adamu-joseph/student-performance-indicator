@@ -15,7 +15,7 @@ namespaces = false
 name = "student-performance-indicator"
 version = "1.0.0"
 description = "ML project for predicting student grade in a specific course"
-requires-python = ">=3.14,<3.15"
+requires-python = ">=3.13,<3.14"
 
 dependencies = [
     "numpy",

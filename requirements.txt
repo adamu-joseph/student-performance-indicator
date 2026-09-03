@@ -35,7 +35,7 @@ markdown-it-py==4.2.0
 MarkupSafe==3.0.3
 matplotlib==3.11.1
 mdurl==0.1.2
--e git+https://github.com/adamu-joseph/student-performance-indicator@307395beb56ab3054489bd582e44baa82816e00d#egg=mlproject
+-e git+https://github.com/adamu-joseph/student-performance-indicator@f08ba1600ff6910d98b1fb0832506254616f1954#egg=mlproject
 msgpack==1.2.2
 mypy==2.3.1
 mypy_extensions==1.1.0
@@ -76,7 +76,7 @@ six==1.17.0
 sortedcontainers==2.4.0
 SQLAlchemy==2.0.52
 stevedore==5.9.1
--e git+https://github.com/adamu-joseph/student-performance-indicator@307395beb56ab3054489bd582e44baa82816e00d#egg=student_performance_indicator
+-e git+https://github.com/adamu-joseph/student-performance-indicator@f08ba1600ff6910d98b1fb0832506254616f1954#egg=student_performance_indicator
 threadpoolctl==3.6.0
 tomli==2.4.1
 tomli_w==1.2.0

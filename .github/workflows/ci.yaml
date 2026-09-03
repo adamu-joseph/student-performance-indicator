@@ -46,7 +46,7 @@ jobs:
 
       # ==================== TYPE CHECKING ====================
       - name: Run MyPy (Type Checking)
-        run: mypy src/ --python-version 3.14
+        run: mypy src/ --python-version 3.13
         continue-on-error: false
 
       # ==================== TESTING ====================
