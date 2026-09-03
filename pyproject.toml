@@ -1,0 +1,87 @@
+[build-system]
+requires = ["setuptools>=75.0.0", "wheel>=0.43.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["*"]
+namespaces = false
+
+[project]
+name = "student-performance-indicator"
+version = "1.0.0"
+description = "ML project for predicting student grade in a specific course"
+requires-python = ">=3.13,<3.14"
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "seaborn",
+    "scikit-learn",
+    "xgboost",
+    "catboost",
+    "setuptools",
+    "wheel",
+    "openpyxl",
+    "optuna",
+    "dill",
+    "python-dotenv",
+    "black",
+    "ruff",
+    "mypy",
+    "pre-commit",
+    "types-PyYAML",
+    "pytest",
+    "bandit",
+    "pip-audit",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py313"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+# Disable formatting rules - Black handles all formatting
+preview = false
+
+[tool.ruff.lint]
+# Select bug detection rules only, avoid conflicts with Black
+select = [
+    "F",   # Pyflakes - undefined names, unused imports
+    "B",   # Bugbear - common bugs and design problems
+    "UP",  # Upgrades - modernize Python syntax
+    "I",   # Isort - import sorting (Black compatible)
+]
+# Explicitly ignore formatting/style rules
+ignore = [
+    "E501",  # Line too long (Black handles this)
+    "E",     # PEP 8 errors (Black handles formatting)
+    "W"     # Warnings (Black handles)
+]
+
+[tool.mypy]
+python_version = "3.13"
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "docs", "code-images"]
+severity_level = "medium"
+
+[tool.pip-audit]
+# pip-audit configuration for dependency vulnerability scanning
+ignore = []  # Add CVE IDs to ignore if necessary
+skip-editable = true  # Skip checking editable installations
+skip-wheels = false  # Check wheel distributions
+skip-dirs = ["tests", "docs", "code-images"]  # Directories to skip
+desc = true  # Show detailed vulnerability descriptions
