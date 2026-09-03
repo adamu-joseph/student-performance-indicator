@@ -18,7 +18,7 @@ This project analyzes student performance and predicts test scores based on fact
 
 Make sure you have the following installed:
 
-- Python 3.14+
+- Python 3.13+
 - pip
 - Jupyter Notebook or VS Code
 - git
