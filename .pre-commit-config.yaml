@@ -49,5 +49,5 @@ repos:
         entry: pip-audit
         args: ["--skip-editable"]
         language: system
-        # pass_filenames: false
+        pass_filenames: false
         stages: [pre-push]
