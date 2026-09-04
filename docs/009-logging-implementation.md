@@ -14,7 +14,7 @@ The default logger name is `student_performance_indicator`.
 
 ## Configuration
 
-`ProjectLogger` loads `config/logger_config.yaml` from the project root and applies it with Python's `logging.config.dictConfig`.
+`ProjectLoggerManager` loads `config/logger_config.yaml` from the project root and applies it with Python's `logging.config.dictConfig`. `get_logger` creates a manager and returns the configured `ProjectLogger` instance.
 
 The configuration must contain a version, formatter, handler, named logger, and root logger. Invalid configuration raises an exception during initialization.
 
@@ -29,15 +29,16 @@ The project and root loggers are configured at `INFO`. Consequently, `DEBUG` mes
 
 ## Using the logger
 
-### Module-level logger
+### Application logger
 
-Use the configured module-level logger for normal application code:
+Use `get_logger` for normal application code. It returns a configured `ProjectLogger`:
 
 ```python
-from src.utils.logger import logging
+from src.utils.logger import get_logger
 
-logging.info("Data ingestion started")
-logging.warning("Optional column is missing", column="parental_education")
+logger = get_logger()
+logger.info("Data ingestion started")
+logger.warning("Optional column is missing", column="parental_education")
 ```
 
 ### `get_logger`
@@ -51,19 +52,20 @@ logger = get_logger("student_performance_indicator")
 logger.info("Training started")
 ```
 
-### `ProjectLogger`
+### `ProjectLoggerManager`
 
-`ProjectLogger` provides an object-oriented wrapper and accepts an optional configuration path:
+Use `ProjectLoggerManager` when a custom logger name or configuration path is required:
 
 ```python
 from pathlib import Path
 
-from src.utils.logger import ProjectLogger
+from src.utils.logger import ProjectLoggerManager
 
-logger = ProjectLogger(
+manager = ProjectLoggerManager(
     logger_name="student_performance_indicator",
     config_path=Path("config/logger_config.yaml"),
 )
+logger = manager.logger
 logger.info("Pipeline started", run_id="example-run")
 ```
 
@@ -133,7 +135,7 @@ Example output:
 
 The formatter uses `json.dumps(..., default=str)` so values that are not natively JSON serializable can be represented as strings.
 
-The wrapper passes keyword arguments to the log record as `extra` attributes. The current formatter emits the fixed fields listed above and does not automatically copy arbitrary `extra` attributes into the JSON payload. Extend `JsonFormatter.format` if custom fields must be serialized in the log output.
+The wrapper passes keyword arguments to the log record as `extra` attributes, and `JsonFormatter` includes those custom attributes in the JSON payload. For example, the previous `user_id` field appears alongside the standard fields. Values that are not natively JSON serializable are converted to strings by `json.dumps(..., default=str)`.
 
 ## Operational guidance
 
@@ -157,3 +159,7 @@ These tests verify logger creation, handler configuration, JSON output, metadata
 ```bash
 pytest
 ```
+
+**Last updated**: 2026:09
+**Maintainer**: Adamu Joseph Ohigwere
+ 

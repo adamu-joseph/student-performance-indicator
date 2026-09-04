@@ -1,17 +1,20 @@
 """Project logger configuration and utilities.
 
-This module provides a reusable, object-oriented logging setup for the
+This module provides a reusable, structured logging setup for the
 student performance indicator project. It reads a YAML-based configuration
-file and exposes a configured logger instance for the rest of the codebase.
+file and exposes a configured logger instance.
 """
 
 from __future__ import annotations
 
+# The project logger intentionally extends Logger methods with structured fields.
+# pyright: reportIncompatibleMethodOverride=false
 import json
-import logging as std_logging
-import logging.config as logging_config
+import logging
+import logging.config
+import traceback
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -19,39 +22,189 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config" / "logger_config.yaml"
 
 
-class JsonFormatter(std_logging.Formatter):
+class JsonFormatter(logging.Formatter):
     """Format log records as JSON strings."""
 
-    def format(self, record: std_logging.LogRecord) -> str:
+    # Standard LogRecord attributes that should not be duplicated
+    # as custom structured fields.
+    STANDARD_LOG_RECORD_FIELDS = {
+        "name",
+        "msg",
+        "args",
+        "levelname",
+        "levelno",
+        "pathname",
+        "filename",
+        "module",
+        "exc_info",
+        "exc_text",
+        "stack_info",
+        "lineno",
+        "funcName",
+        "created",
+        "msecs",
+        "relativeCreated",
+        "thread",
+        "threadName",
+        "processName",
+        "process",
+        "taskName",
+        "message",
+        "asctime",
+    }
+
+    def format(self, record: logging.LogRecord) -> str:
         """Convert a log record into a JSON payload."""
+
         payload: dict[str, Any] = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
             "logger": record.name,
-            "module": record.module,
-            "function": record.funcName,
-            "line": record.lineno,
             "message": record.getMessage(),
         }
 
         if record.exc_info:
-            payload["exception"] = self.formatException(record.exc_info)
+            # payload["exception"] = self.formatException(record.exc_info)
+            exc_type, exc_value, exc_tb = record.exc_info
+
+            tb = traceback.extract_tb(exc_tb)
+            last_frame = tb[-1] if tb else None
+
+            payload["exception"] = {
+                "type": exc_type.__name__ if exc_type else None,
+                "message": str(exc_value) if exc_value else None,
+                "file": last_frame.filename if last_frame else None,
+                "line_no": last_frame.lineno if last_frame else None,
+                "function": last_frame.name if last_frame else None,
+            }
 
         if record.stack_info:
             payload["stack_info"] = self.formatStack(record.stack_info)
 
+        # Add custom structured logging fields such as:
+        # user_id=42, student_id=123, prediction=85.5, etc.
+        for key, value in record.__dict__.items():
+            if key not in self.STANDARD_LOG_RECORD_FIELDS:
+                payload[key] = value
+
         return json.dumps(payload, default=str)
 
 
-class ProjectLogger:
-    """Object-oriented manager for the application's logger."""
+class ProjectLogger(logging.Logger):
+    """Application logger supporting structured keyword arguments."""
+
+    def _log_structured(
+        self,
+        level: int,
+        message: object,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> None:
+        """Log a message while converting custom kwargs into ``extra``."""
+
+        extra = kwargs.pop("extra", None)
+
+        if extra is None:
+            extra_dict: dict[str, Any] = {}
+        elif isinstance(extra, dict):
+            extra_dict = dict(extra)
+        else:
+            raise TypeError("extra must be a dictionary")
+
+        # Extract standard logging keyword arguments.
+        exc_info = kwargs.pop("exc_info", None)
+        stack_info = kwargs.pop("stack_info", False)
+        stacklevel = kwargs.pop("stacklevel", 1)
+
+        # Everything remaining becomes structured log data.
+        extra_dict.update(kwargs)
+
+        try:
+            super()._log(
+                level,
+                message,
+                args,
+                exc_info=exc_info,
+                extra=extra_dict,
+                stack_info=stack_info,
+                stacklevel=stacklevel,
+            )
+        except Exception as error:
+            print(f"[CRITICAL] Failed to log message: {error}")
+            raise RuntimeError(f"Failed to log message: {error}") from error
+
+    def debug(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
+        self,
+        message: object,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Log a DEBUG message with optional structured fields."""
+        self._log_structured(logging.DEBUG, message, args, kwargs)
+
+    def info(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
+        self,
+        message: object,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Log an INFO message with optional structured fields."""
+        self._log_structured(logging.INFO, message, args, kwargs)
+
+    def warning(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
+        self,
+        message: object,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Log a WARNING message with optional structured fields."""
+        self._log_structured(logging.WARNING, message, args, kwargs)
+
+    def error(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
+        self,
+        message: object,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Log an ERROR message with optional structured fields."""
+        self._log_structured(logging.ERROR, message, args, kwargs)
+
+    def exception(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
+        self,
+        message: object,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Log an ERROR message with exception information."""
+
+        if "exc_info" not in kwargs:
+            kwargs["exc_info"] = True
+
+        self._log_structured(logging.ERROR, message, args, kwargs)
+
+    def critical(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
+        self,
+        message: object,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Log a CRITICAL message with optional structured fields."""
+        self._log_structured(logging.CRITICAL, message, args, kwargs)
+
+
+# Make logging.getLogger() create ProjectLogger instances.
+logging.setLoggerClass(ProjectLogger)
+
+
+class ProjectLoggerManager:
+    """Manage configuration of the application logger."""
 
     def __init__(
         self,
         logger_name: str = "student_performance_indicator",
         config_path: Path | str | None = None,
     ) -> None:
-        """Initialize the project logger manager.
+        """Initialize the logger manager.
 
         Args:
             logger_name: Name given to the logger.
@@ -59,27 +212,28 @@ class ProjectLogger:
         """
         self.logger_name = logger_name
         self.config_path = Path(config_path) if config_path else DEFAULT_CONFIG_PATH
-        self.mylogger = self._configure_logger()
+        self.logger = self._configure_logger()
 
     def _load_config(self) -> dict[str, Any]:
         """Load logger configuration from the YAML file."""
+
         if not self.config_path.exists():
             raise FileNotFoundError(f"Logger config file not found: {self.config_path}")
 
         try:
             with self.config_path.open("r", encoding="utf-8") as config_file:
                 config = yaml.safe_load(config_file) or {}
+        except yaml.YAMLError as error:
+            raise ValueError(f"Error parsing logger config file: {error}") from error
 
-        except yaml.YAMLError as e:
-            raise ValueError(f"Error parsing logger config file: {e}") from e
+        if not isinstance(config, dict):
+            raise TypeError("Logger config must be a dictionary")
 
-        print(f"[INFO] Logger configuration loaded from {self.config_path}")
+        print(f"[INFO] Loaded logger config from {self.config_path}")
         return config
 
     def _validate_config(self, config: dict[str, Any]) -> None:
         """Validate the logger configuration."""
-        if not isinstance(config, dict):
-            raise TypeError("Logger config must be a dictionary")
 
         if not config.get("handlers"):
             raise ValueError("Logger config must define at least one handler")
@@ -93,69 +247,58 @@ class ProjectLogger:
         if not config.get("root"):
             raise ValueError("Logger config must define a root logger")
 
-        if not config.get("version"):
-            raise ValueError("Logger config must specify version a version number")
+        if "version" not in config:
+            raise ValueError("Logger config must specify a version number")
 
-        # create file for logs
-        log_file_path = Path(config["handlers"]["file"]["filename"])
-        log_file_path.parent.mkdir(parents=True, exist_ok=True)
+        # Ensure the directory for the file handler exists.
+        file_handler = config.get("handlers", {}).get("file", {})
 
-        print("[INFO] Logger configuration validated successfully")
+        if file_handler and "filename" in file_handler:
+            log_file_path = Path(file_handler["filename"])
+            log_file_path.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
 
-    def _configure_logger(self) -> std_logging.Logger:
-        """Configure logger using dictConfig from YAML."""
+        else:
+            raise ValueError(
+                "Logger config must define a 'file' handler with a 'filename'"
+            )
+
+        print("[INFO] Logger configuration validated successfully.")
+
+    def _configure_logger(self) -> ProjectLogger:
+        """Configure and return the application logger."""
+
         config = self._load_config()
         self._validate_config(config)
 
         try:
-            logging_config.dictConfig(config)
-            logger = std_logging.getLogger(self.logger_name)
-        except Exception as e:
-            raise ValueError(f"Error configuring logger: {e}") from e
+            logging.config.dictConfig(config)
+            logger = logging.getLogger(self.logger_name)
+        except Exception as error:
+            raise ValueError(f"Error configuring logger: {error}") from error
 
-        print(f"[INFO] Logger '{self.logger_name}' configured successfully")
-        return logger
+        if not isinstance(logger, logging.Logger):
+            raise TypeError(f"Expected Logger, got {type(logger).__name__}")
 
-    def info(self, message: str, **kwargs: Any) -> None:
-        """Log an informational message and include structured kwargs in payload."""
-        extra = kwargs.pop("extra", {})
-        extra = {**extra, **kwargs}
-        self.mylogger.info(message, extra=extra)
-
-    def warning(self, message: str, **kwargs: Any) -> None:
-        """Log a warning message and include structured kwargs in payload."""
-        extra = kwargs.pop("extra", {})
-        extra = {**extra, **kwargs}
-        self.mylogger.warning(message, extra=extra)
-
-    def error(self, message: str, **kwargs: Any) -> None:
-        """Log an error message and include structured kwargs in payload."""
-        extra = kwargs.pop("extra", {})
-        extra = {**extra, **kwargs}
-        self.mylogger.error(message, extra=extra)
-
-    def exception(self, message: str, **kwargs: Any) -> None:
-        """Log an exception message with traceback and structured kwargs."""
-        extra = kwargs.pop("extra", {})
-        extra = {**extra, **kwargs}
-        self.mylogger.exception(message, extra=extra)
-
-    def critical(self, message: str, **kwargs: Any) -> None:
-        """Log a critical message and include structured kwargs in payload."""
-        extra = kwargs.pop("extra", {})
-        extra = {**extra, **kwargs}
-        self.mylogger.critical(message, extra=extra)
-
-    def debug(self, message: str, **kwargs: Any) -> None:
-        """Log a debug message and include structured kwargs in payload."""
-        extra = kwargs.pop("extra", {})
-        extra = {**extra, **kwargs}
-        self.mylogger.debug(message, extra=extra)
+        print(f"[INFO] Logger '{self.logger_name}' configured successfully.")
+        return cast(ProjectLogger, logger)
 
 
-def get_logger(name: str = "student_performance_indicator") -> ProjectLogger:
-    """Return a configured project logger instance."""
-    return ProjectLogger(logger_name=name)
+def get_logger(
+    name: str = "student_performance_indicator",
+) -> ProjectLogger:
+    """Return the configured project logger."""
+
+    print(f"[INFO] Retrieving logger '{name}'")
+    manager = ProjectLoggerManager(logger_name=name)
+    return manager.logger
 
 
-__all__ = ["JsonFormatter", "ProjectLogger", "get_logger"]
+__all__ = [
+    "JsonFormatter",
+    "ProjectLogger",
+    "ProjectLoggerManager",
+    "get_logger",
+]
