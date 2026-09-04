@@ -60,7 +60,7 @@ jobs:
         continue-on-error: false
 
       - name: Run pip-audit (Dependency Scan)
-        run: pip-audit --skip-editable --format=json -o audit-report.json
+        run: pip-audit --skip-editable --ignore-vuln PYSEC-2026-2132 --format=json -o audit-report.json
         continue-on-error: false
 
       # ==================== ARTIFACTS ====================

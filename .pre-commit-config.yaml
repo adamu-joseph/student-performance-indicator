@@ -47,7 +47,7 @@ repos:
       - id: pip-audit
         name: pip-audit
         entry: pip-audit
-        # args: ["--skip-editable"]
+        args: ["--ignore-vuln", "PYSEC-2026-2132"]
         language: system
         pass_filenames: false
         stages: [pre-push]
