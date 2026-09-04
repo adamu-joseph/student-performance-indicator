@@ -87,7 +87,6 @@ testpaths = [
 [tool.pip-audit]
 # pip-audit configuration for dependency vulnerability scanning
 # Add CVE IDs to ignore if necessary
-ignore-vuln = ["PYSEC-2026-2132"]
 skip-editable = true  # Skip checking editable installations
 skip-wheels = false  # Check wheel distributions
 skip-dirs = ["tests", "docs", "code-images"]  # Directories to skip

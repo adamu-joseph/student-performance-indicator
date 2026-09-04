@@ -47,7 +47,7 @@ repos:
       - id: pip-audit
         name: pip-audit
         entry: pip-audit
-        args: ["--ignore-vuln", "PYSEC-2026-2132"]
+        args: ["--ignore-vuln", "PYSEC-2026-2132"] # ignored click because of zenml compatibility issue
         language: system
         pass_filenames: false
         stages: [pre-push]
