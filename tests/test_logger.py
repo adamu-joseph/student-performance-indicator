@@ -22,7 +22,7 @@ def test_project_logger_writes_json_log_entry() -> None:
 
     logger = get_logger()
 
-    log_file = Path("artifacts/logs/app_test.log")
+    log_file = Path("artifacts/logs/app.log")
     log_file.parent.mkdir(
         parents=True, exist_ok=True
     )  # Ensure the log directory exists
@@ -49,7 +49,7 @@ def test_project_exception_logging() -> None:
     except ValueError:
         logger.error("An exception occurred", exc_info=True, user_id=99)
 
-    log_file = Path("artifacts/logs/app_test.log")
+    log_file = Path("artifacts/logs/app.log")
     log_file.parent.mkdir(
         parents=True, exist_ok=True
     )  # Ensure the log directory exists
