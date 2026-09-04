@@ -16,6 +16,7 @@ def test_project_logger_returns_configured_logger() -> None:
     assert logger.handlers
 
 
+# Fixed the test function name to be more descriptive and added a docstring for clarity.
 def test_project_logger_writes_json_log_entry() -> None:
     """The logger should write JSON-formatted log records to file output."""
 

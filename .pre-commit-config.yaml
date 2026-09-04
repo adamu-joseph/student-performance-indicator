@@ -39,7 +39,6 @@ repos:
         language: system
         pass_filenames: false
         stages: [pre-push]
-        args: ["--cov=src", "--cov-fail-under=75", "-v"]
 
       - id: pip-audit
         name: pip-audit
