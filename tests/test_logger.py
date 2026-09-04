@@ -29,7 +29,7 @@ def test_project_logger_writes_json_log_entry() -> None:
 
     logger.info("logger test message", user_id=42)
 
-    with log_file.open("r", encoding="utf-8") as log_handle:
+    with open(log_file, encoding="utf-8") as log_handle:
         contents = [line.strip() for line in log_handle.readlines()]
 
         payload = json.loads(contents[-1])  # Load the last log entry as JSON
@@ -54,7 +54,7 @@ def test_project_exception_logging() -> None:
         parents=True, exist_ok=True
     )  # Ensure the log directory exists
 
-    with log_file.open("r", encoding="utf-8") as log_handle:
+    with open(log_file, encoding="utf-8") as log_handle:
         contents = [line.strip() for line in log_handle.readlines()]
         payload = json.loads(contents[-1])
 
