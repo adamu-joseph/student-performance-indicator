@@ -13,11 +13,14 @@ handlers:
     stream: ext://sys.stdout
 
   file:
-    class: logging.FileHandler
+    class: logging.handlers.RotatingFileHandler
     level: INFO
     formatter: json
     filename: artifacts/logs/app.log
+    maxBytes: 5242880
+    backupCount: 5
     encoding: utf-8
+
 
 loggers:
   student_performance_indicator:
