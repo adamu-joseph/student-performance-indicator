@@ -28,9 +28,8 @@ def test_project_logger_writes_json_log_entry() -> None:
     logger.info("logger test message", user_id=42)
 
     with log_file.open("r", encoding="utf-8") as log_handle:
-        contents = log_handle.read().strip()
-
-    payload = json.loads(contents)
+        # contents = log_handle.read().strip()
+        payload = json.load(log_handle)
 
     assert payload["level"] == "INFO"
     assert payload["logger"] == "student_performance_indicator"
@@ -49,9 +48,7 @@ def test_project_exception_logging() -> None:
 
     log_file = Path("artifacts/logs/app.log")
     with log_file.open("r", encoding="utf-8") as log_handle:
-        contents = log_handle.read().strip()
-
-    payload = json.loads(contents)
+        payload = json.load(log_handle)
 
     assert payload["level"] == "ERROR"
     assert payload["logger"] == "student_performance_indicator"
