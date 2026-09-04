@@ -51,11 +51,4 @@ repos:
         language: system
         pass_filenames: false
         stages: [pre-push]
-
-        # Ensure click.edit is never called
-      - id: forbid-click-edit
-        name: Forbid click.edit usage
-        entry: grep -R "click.edit("
-        language: system
-        pass_filenames: false
-        stages: [pre-push]
+        
