@@ -39,6 +39,7 @@ dependencies = [
     "pytest",
     "bandit",
     "pip-audit",
+    "zenml",
 ]
 
 [tool.black]
