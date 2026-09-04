@@ -9,7 +9,7 @@ from src.utils.logger import get_logger
 
 def test_project_logger_returns_configured_logger() -> None:
     """The logger should be created with a valid project name and handler set."""
-    logger = get_logger("student_performance_indicator")
+    logger = get_logger()
 
     assert isinstance(logger, logging.Logger)
     assert logger.name == "student_performance_indicator"

@@ -154,6 +154,4 @@ def get_logger(name: str = "student_performance_indicator") -> ProjectLogger:
     return ProjectLogger(logger_name=name)
 
 
-logging = get_logger()
-
-__all__ = ["JsonFormatter", "ProjectLogger", "get_logger", "logging"]
+__all__ = ["JsonFormatter", "ProjectLogger", "get_logger"]
