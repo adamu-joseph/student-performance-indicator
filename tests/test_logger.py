@@ -20,12 +20,12 @@ def test_project_logger_returns_configured_logger() -> None:
 def test_project_logger_writes_json_log_entry() -> None:
     """The logger should write JSON-formatted log records to file output."""
 
-    from src.utils.logger import logging
+    logger = get_logger()
 
     log_file = Path("artifacts/logs/app.log")
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
-    logging.info("logger test message", user_id=42)
+    logger.info("logger test message", user_id=42)
 
     with log_file.open("r", encoding="utf-8") as log_handle:
         contents = log_handle.read().strip()
@@ -41,12 +41,11 @@ def test_project_logger_writes_json_log_entry() -> None:
 def test_project_exception_logging() -> None:
     """The logger should log exceptions with structured information."""
 
-    from src.utils.logger import logging
-
+    logger = get_logger()
     try:
         raise ValueError("Test exception for logging")
     except ValueError:
-        logging.error("An exception occurred", exc_info=True, user_id=99)
+        logger.error("An exception occurred", exc_info=True, user_id=99)
 
     log_file = Path("artifacts/logs/app.log")
     with log_file.open("r", encoding="utf-8") as log_handle:
