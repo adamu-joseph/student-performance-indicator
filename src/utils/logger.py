@@ -96,6 +96,10 @@ class ProjectLogger:
         if not config.get("version"):
             raise ValueError("Logger config must specify version a version number")
 
+        # create file for logs
+        log_file_path = Path(config["handlers"]["file"]["filename"])
+        log_file_path.parent.mkdir(parents=True, exist_ok=True)
+
         print("[INFO] Logger configuration validated successfully")
 
     def _configure_logger(self) -> std_logging.Logger:
