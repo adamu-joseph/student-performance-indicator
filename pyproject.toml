@@ -79,6 +79,11 @@ ignore_missing_imports = true
 exclude_dirs = ["tests", "docs", "code-images"]
 severity_level = "medium"
 
+[tool.pytest.ini_options]
+testpaths = [
+    "tests"
+]
+
 [tool.pip-audit]
 # pip-audit configuration for dependency vulnerability scanning
 ignore = []  # Add CVE IDs to ignore if necessary
