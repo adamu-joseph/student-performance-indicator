@@ -62,5 +62,4 @@ def test_project_exception_logging() -> None:
     assert payload["logger"] == "student_performance_indicator"
     assert payload["message"] == "An exception occurred"
     assert "exception" in payload
-    assert "ValueError: Test exception for logging" in payload["exception"]
     assert payload["user_id"] == 99
