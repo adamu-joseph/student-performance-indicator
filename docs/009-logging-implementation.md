@@ -1,37 +1,55 @@
 # Logging Implementation
 
-This document describes the logging system used by the Student Performance Indicator project.
+This document describes the current logging system used by the Student Performance Indicator project.
 
 ## Components
 
 | File | Responsibility |
 |---|---|
-| `src/utils/logger.py` | Logger manager, JSON formatter, and public logging API |
-| `config/logger_config.yaml` | Logger levels, handlers, destinations, and formatter configuration |
-| `artifacts/logs/app.log` | File destination for application logs |
+| `src/utils/logger.py` | Logger class, formatter, manager, and public logging API |
+| `config/logger_config.yaml` | Handler, formatter, and logger configuration |
+| `artifacts/logs/app.log` | JSON log output destination for local application runs |
 
 The default logger name is `student_performance_indicator`.
 
+## Logger architecture
+
+The project logger is implemented in `src/utils/logger.py` and follows a structured-logging pattern:
+
+- `ProjectLogger` subclasses `logging.Logger`.
+- Each standard logging method (`debug`, `info`, `warning`, `error`, `exception`, `critical`) passes unknown keyword arguments into the logger as structured fields.
+- `ProjectLogger._log_structured()` converts keyword arguments into an `extra` dictionary before delegating to `logging.Logger._log()`.
+- `ProjectLogger.exception()` automatically sets `exc_info=True` when the caller does not provide it.
+- `JsonFormatter` serializes each log record to a single JSON line.
+
+`ProjectLoggerManager` reads a YAML config file, validates the required sections, ensures the log file directory exists, and applies the configuration with `logging.config.dictConfig()`. `get_logger()` creates a manager for the requested logger name and returns the configured logger instance.
+
 ## Configuration
 
-`ProjectLoggerManager` loads `config/logger_config.yaml` from the project root and applies it with Python's `logging.config.dictConfig`. `get_logger` creates a manager and returns the configured `ProjectLogger` instance.
+The active logging configuration is defined in `config/logger_config.yaml` and is loaded from the project root. The config must contain:
 
-The configuration must contain a version, formatter, handler, named logger, and root logger. Invalid configuration raises an exception during initialization.
+- `version`
+- `formatters`
+- `handlers`
+- `loggers`
+- `root`
 
-The current handlers are:
+The current setup is:
 
-| Handler | Level | Destination | Format |
+| Handler | Level | Destination | Formatter |
 |---|---|---|---|
-| `console` | `INFO` | Standard output | JSON |
+| `console` | `INFO` | standard output | JSON |
 | `file` | `INFO` | `artifacts/logs/app.log` | JSON |
 
-The project and root loggers are configured at `INFO`. Consequently, `DEBUG` messages are filtered with the current configuration even though the `debug` method is available in the Python API.
+The named logger `student_performance_indicator` is configured with `level: INFO`, `handlers: [console, file]`, and `propagate: false`. The root logger is also `INFO` and only writes to the console.
+
+Because the logger is configured at `INFO`, `logger.debug(...)` calls are filtered out unless the logging level is lowered in the YAML file.
 
 ## Using the logger
 
-### Application logger
+### Default app logger
 
-Use `get_logger` for normal application code. It returns a configured `ProjectLogger`:
+Use `get_logger()` for most application code:
 
 ```python
 from src.utils.logger import get_logger
@@ -41,20 +59,20 @@ logger.info("Data ingestion started")
 logger.warning("Optional column is missing", column="parental_education")
 ```
 
-### `get_logger`
+### Custom logger name
 
-Use `get_logger` when a specific logger name is required:
+The logger accepts a custom name if you need a separate logger instance:
 
 ```python
 from src.utils.logger import get_logger
 
-logger = get_logger("student_performance_indicator")
-logger.info("Training started")
+logger = get_logger("custom_logger")
+logger.info("Training started", run_id="example-run")
 ```
 
-### `ProjectLoggerManager`
+### Direct manager configuration
 
-Use `ProjectLoggerManager` when a custom logger name or configuration path is required:
+Use `ProjectLoggerManager` when you need full control over the logger name or YAML path:
 
 ```python
 from pathlib import Path
@@ -69,9 +87,21 @@ logger = manager.logger
 logger.info("Pipeline started", run_id="example-run")
 ```
 
-## Log levels
+## Structured logging patterns
 
-The wrapper provides the standard logging levels:
+Every log method accepts a message plus keyword arguments. Those arguments are merged into the `extra` payload before the record is emitted:
+
+```python
+logger.info(
+    "Student data loaded",
+    extra={"source": "artifacts/train.csv"},
+    row_count=1200,
+)
+```
+
+When the same key exists in both `extra` and direct keyword arguments, the direct keyword argument wins because `extra_dict.update(kwargs)` is applied last.
+
+Use the standard log levels like this:
 
 ```python
 logger.debug("Detailed diagnostic information")
@@ -82,19 +112,7 @@ logger.exception("Operation failed with traceback")
 logger.critical("Severe application failure")
 ```
 
-Every method accepts a message and keyword arguments. The keyword arguments are merged into the `extra` mapping passed to the underlying Python logger:
-
-```python
-logger.info(
-    "Student data loaded",
-    extra={"source": "artifacts/train.csv"},
-    row_count=1200,
-)
-```
-
-If a key is present in both `extra` and direct keyword arguments, the direct keyword argument takes precedence.
-
-Use `exception` inside an exception handler to include the active traceback:
+Inside an exception handler, prefer `logger.exception()` to emit the active traceback automatically:
 
 ```python
 try:
@@ -103,63 +121,69 @@ except ValueError:
     logger.exception("Prediction failed", operation="run_prediction")
 ```
 
-## JSON format
+## JSON log payload
 
-`JsonFormatter` serializes the following record fields:
+`JsonFormatter` produces one JSON object per log event. It includes the standard record metadata plus any custom structured keys.
+
+The following fields are always emitted when available:
 
 | Field | Description |
 |---|---|
-| `timestamp` | Formatted record creation time |
-| `level` | Level name, such as `INFO` or `ERROR` |
+| `timestamp` | Log creation time formatted by Python's logging formatter |
+| `level` | Log level such as `INFO`, `ERROR`, or `CRITICAL` |
 | `logger` | Logger name |
-| `module` | Module that emitted the record |
-| `function` | Function that emitted the record |
-| `line` | Source line that emitted the record |
-| `message` | Rendered log message |
-| `exception` | Formatted traceback when exception information exists |
-| `stack_info` | Stack information when requested |
+| `message` | Rendered message text |
+| `exception` | Structured exception summary if `exc_info` is present |
+| `stack_info` | Stack trace text if requested |
+| custom fields | Any extra attributes passed as keyword arguments |
 
-Example output:
+`exception` is a dictionary with this structure:
+
+```python
+{
+    "type": exc_type.__name__,
+    "message": str(exc_value),
+    "file": last_frame.filename,
+    "line_no": last_frame.lineno,
+    "function": last_frame.name,
+}
+```
+
+This is built from the last frame in `traceback.extract_tb(exc_tb)`, so it captures the terminal frame in the traceback rather than the full stack trace object.
+
+Example JSON payload:
 
 ```json
 {
   "timestamp": "2026-09-04 12:00:00,000",
   "level": "INFO",
   "logger": "student_performance_indicator",
-  "module": "data_ingestion",
-  "function": "ingest_data",
-  "line": 42,
-  "message": "Student data loaded"
+  "message": "Student data loaded",
+  "source": "artifacts/train.csv",
+  "row_count": 1200
 }
 ```
 
-The formatter uses `json.dumps(..., default=str)` so values that are not natively JSON serializable can be represented as strings.
-
-The wrapper passes keyword arguments to the log record as `extra` attributes, and `JsonFormatter` includes those custom attributes in the JSON payload. For example, the previous `user_id` field appears alongside the standard fields. Values that are not natively JSON serializable are converted to strings by `json.dumps(..., default=str)`.
+Any value that cannot be serialized as JSON is converted using `json.dumps(..., default=str)`, so log payloads remain valid JSON even for non-standard objects.
 
 ## Operational guidance
 
-- Use the project logger instead of creating separate logger configurations.
-- Keep messages concise and place useful context in keyword fields.
-- Never log passwords, tokens, API keys, or other sensitive values.
-- Use `exception` when a traceback is needed for diagnosis.
-- Review `artifacts/logs/app.log` when investigating local pipeline failures.
-- Change levels and destinations in `config/logger_config.yaml`, not at individual call sites.
+- Use `get_logger()` instead of instantiating a separate logging configuration in application code.
+- Keep messages concise and place diagnostic values in keyword arguments.
+- Never log secrets such as passwords, tokens, or API keys.
+- Use `logger.exception()` inside `except` blocks when traceback details matter.
+- Review `artifacts/logs/app.log` when troubleshooting local pipeline failures.
+- Adjust log levels and handlers in `config/logger_config.yaml`, not in individual call sites.
 
 ## Testing
 
-Run the focused logger tests with:
+The logger behavior is validated by the focused test suite:
 
 ```bash
 pytest tests/test_logger.py -v
 ```
 
-These tests verify logger creation, handler configuration, JSON output, metadata, and exception serialization. Run the complete suite after changing shared logging behavior:
+These tests cover logger creation, JSON serialization, metadata propagation, and exception payload generation.
 
-```bash
-pytest
-```
-
-**Last updated**: 2026:09
+**Last updated**: 2026-09-04
 **Maintainer**: Adamu Joseph Ohigwere
- 
