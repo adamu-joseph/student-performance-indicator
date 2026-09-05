@@ -291,7 +291,7 @@ def get_logger(
 ) -> ProjectLogger:
     """Return the configured project logger."""
 
-    print(f"[INFO] Retrieving logger '{name}'")
+    print(f"[INFO] Initializing logger '{name}'")
     manager = ProjectLoggerManager(logger_name=name)
     return manager.logger
 
