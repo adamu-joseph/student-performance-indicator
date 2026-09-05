@@ -1,0 +1,33 @@
+version: 1
+
+formatters:
+  json:
+    (): utils.logger.JsonFormatter
+    format: "%(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: json
+    stream: ext://sys.stdout
+
+  file:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: json
+    filename: artifacts/logs/app.log
+    maxBytes: 5242880
+    backupCount: 5
+    encoding: utf-8
+
+
+loggers:
+  student_performance_indicator:
+    level: INFO
+    handlers: [console, file]
+    propagate: false
+
+root:
+  level: INFO
+  handlers: [console]

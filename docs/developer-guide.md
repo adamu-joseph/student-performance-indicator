@@ -13,65 +13,36 @@ Quick technical setup guide for the **Student Performance Indicator** project.
 
 ## Getting Started
 
-### Prerequisites
-
-- Python 3.8 or higher
-- pip (Python package manager)
-- Git (for version control)
-
-### Installation
-
-1. **Clone the repository** (if applicable)
-
-   ```bash
-   git clone <repository-url>
-   cd student-performance-indicator
-   ```
-
-2. **Create a virtual environment** (recommended)
-
-   ```bash
-   python -m venv venv
-   # On Windows:
-   venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies**
-
-   ```bash
-   pip install -r requirements.in
-   ```
-
+> Find detailed getting started instructions at [setup](../setup.txt)
 ---
 
 ## Development Setup
-
-### Environment Variables
-
-Create a `.env` file in the root directory (if needed) for sensitive configuration:
-
-``` python
-# Example:
-# LOG_LEVEL=DEBUG
-# MODEL_PATH=artifacts/model
-```
-
-### Running Tests
-
-```bash
-pytest tests/
-```
 
 ### Code Quality
 
 - Follow PEP 8 style guidelines
 - Use type hints where applicable
 - Write docstrings for functions and classes
-- Keep functions focused and modular
+- Keep functions and classes focused and modular
+
+> Get the tools documentation at [code quality implementation](./003-code-quality-implementation.md)
+
+### Security
+
+- Use Bandit to scan for common Python security vulnerabilities
+- Use pip-audit to detect vulnerable dependency versions before release
+- Fix security issues promptly and review findings before merging
+
+> Get the tools documentation at [security implementation](./004-security-implementation.md)
+
+### Testing
+
+- Use pytest for unit and integration testing across the project
+- Write clear tests for data processing, model logic, and regression prevention
+
+> Get the tools documentation at [testing implementation](./005-testing-implementation.md)
 
 ---
 
-**Last Updated:** 2026-09-01  
+**Last Updated:** 2026-09
 **Maintainer:** Adamu Joseph Ohigwere

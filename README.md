@@ -2,7 +2,7 @@
 
 ## 📌 Project Overview
 
-This project analyzes student performance and predicts test scores based on factors like:
+This project analyzes student performance and predicts final scores based on factors like:
 
 - gender
 - ethnicity
