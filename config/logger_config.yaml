@@ -2,7 +2,7 @@ version: 1
 
 formatters:
   json:
-    (): src.utils.logger.JsonFormatter
+    (): utils.logger.JsonFormatter
     format: "%(message)s"
 
 handlers:
