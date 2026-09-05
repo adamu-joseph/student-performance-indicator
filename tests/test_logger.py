@@ -4,7 +4,7 @@ import json
 import logging
 from pathlib import Path
 
-from src.utils.logger import get_logger
+from utils.logger import get_logger
 
 
 def test_project_logger_returns_configured_logger() -> None:

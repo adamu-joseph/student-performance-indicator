@@ -30,3 +30,9 @@
    ```bash
    pip install -r requirements.in
    ```
+
+4. **Install pre commit hooks**
+
+   ```bash
+   pre-commit install --hook-type pre-push
+   ```
