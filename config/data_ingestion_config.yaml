@@ -1,0 +1,15 @@
+config:
+  source: device
+  input_path: artifacts/data/raw/dataset.csv
+  kaggle_url: https://www.kaggle.com/datasets/whenamancodes/student-performance-indicator
+  output_dir: artifacts/data/processed
+  dataset_version: 2.0.0
+  request_timeout: 30
+
+supported_file_types:
+  - .csv
+
+data:
+  # Note that target_column is case sensitive and should match the column name in the dataset exactly.
+  target_column: exam_score
+  type: int

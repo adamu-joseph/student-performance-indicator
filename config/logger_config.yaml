@@ -2,7 +2,7 @@ version: 1
 
 formatters:
   json:
-    (): src.utils.logger.JsonFormatter
+    (): utils.logger.JsonFormatter
     format: "%(message)s"
 
 handlers:
@@ -24,6 +24,10 @@ handlers:
 
 loggers:
   student_performance_indicator:
+    level: INFO
+    handlers: [console, file]
+    propagate: false
+  student_performance_indicator.data_ingestion:
     level: INFO
     handlers: [console, file]
     propagate: false

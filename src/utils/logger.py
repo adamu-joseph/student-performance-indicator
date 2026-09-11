@@ -129,6 +129,7 @@ class ProjectLogger(logging.Logger):
                 stack_info=stack_info,
                 stacklevel=stacklevel,
             )
+
         except Exception as error:
             print(f"[CRITICAL] Failed to log message: {error}")
             raise RuntimeError(f"Failed to log message: {error}") from error
@@ -139,7 +140,17 @@ class ProjectLogger(logging.Logger):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Log a DEBUG message with optional structured fields."""
+        """Log a DEBUG message with optional structured fields.
+
+        Args:
+            message: The log message.
+            *args: Optional positional arguments for the message.
+            **kwargs: Optional keyword arguments for structured logging fields.
+
+        Returns: None
+
+        """
+
         self._log_structured(logging.DEBUG, message, args, kwargs)
 
     def info(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
@@ -148,7 +159,15 @@ class ProjectLogger(logging.Logger):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Log an INFO message with optional structured fields."""
+        """Log a INFO message with optional structured fields.
+
+        Args:
+            message: The log message.
+            *args: Optional positional arguments for the message.
+            **kwargs: Optional keyword arguments for structured logging fields.
+
+        Returns: None"""
+
         self._log_structured(logging.INFO, message, args, kwargs)
 
     def warning(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
@@ -157,7 +176,15 @@ class ProjectLogger(logging.Logger):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Log a WARNING message with optional structured fields."""
+        """Log a WARNING message with optional structured fields.
+
+        Args:
+            message: The log message.
+            *args: Optional positional arguments for the message.
+            **kwargs: Optional keyword arguments for structured logging fields.
+
+        Returns: None"""
+
         self._log_structured(logging.WARNING, message, args, kwargs)
 
     def error(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
@@ -166,7 +193,15 @@ class ProjectLogger(logging.Logger):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Log an ERROR message with optional structured fields."""
+        """Log a ERROR message with optional structured fields.
+
+        Args:
+            message: The log message.
+            *args: Optional positional arguments for the message.
+            **kwargs: Optional keyword arguments for structured logging fields.
+
+        Returns: None"""
+
         self._log_structured(logging.ERROR, message, args, kwargs)
 
     def exception(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
@@ -175,7 +210,14 @@ class ProjectLogger(logging.Logger):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Log an ERROR message with exception information."""
+        """Log aN EXCEPTION message with optional structured fields.
+
+        Args:
+            message: The log message.
+            *args: Optional positional arguments for the message.
+            **kwargs: Optional keyword arguments for structured logging fields.
+
+        Returns: None"""
 
         if "exc_info" not in kwargs:
             kwargs["exc_info"] = True
@@ -188,7 +230,15 @@ class ProjectLogger(logging.Logger):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Log a CRITICAL message with optional structured fields."""
+        """Log a CRITICAL message with optional structured fields.
+
+        Args:
+            message: The log message.
+            *args: Optional positional arguments for the message.
+            **kwargs: Optional keyword arguments for structured logging fields.
+
+        Returns: None"""
+
         self._log_structured(logging.CRITICAL, message, args, kwargs)
 
 
@@ -197,7 +247,17 @@ logging.setLoggerClass(ProjectLogger)
 
 
 class ProjectLoggerManager:
-    """Manage configuration of the application logger."""
+    """Manage configuration of the application logger.
+
+    This class reads a YAML configuration file and sets up the logger
+    with the specified handlers, formatters, and log levels.
+
+    Args:
+        logger_name: Name of the logger to configure.
+        config_path: Optional path to the YAML configuration file.
+
+    Returns: None
+    """
 
     def __init__(
         self,
@@ -224,9 +284,13 @@ class ProjectLoggerManager:
             with self.config_path.open("r", encoding="utf-8") as config_file:
                 config = yaml.safe_load(config_file) or {}
         except yaml.YAMLError as error:
+            print(f"[CRITICAL] Error parsing logger config file: {error}")
             raise ValueError(f"Error parsing logger config file: {error}") from error
 
         if not isinstance(config, dict):
+            print(
+                f"[CRITICAL] Logger config must be a dictionary, got {type(config).__name__}"
+            )
             raise TypeError("Logger config must be a dictionary")
 
         print(f"[INFO] Loaded logger config from {self.config_path}")
@@ -236,18 +300,23 @@ class ProjectLoggerManager:
         """Validate the logger configuration."""
 
         if not config.get("handlers"):
+            print("[CRITICAL] Logger config must define at least one handler")
             raise ValueError("Logger config must define at least one handler")
 
         if not config.get("formatters"):
+            print("[CRITICAL] Logger config must define at least one formatter")
             raise ValueError("Logger config must define at least one formatter")
 
         if not config.get("loggers"):
+            print("[CRITICAL] Logger config must define at least one logger")
             raise ValueError("Logger config must define at least one logger")
 
         if not config.get("root"):
+            print("[CRITICAL] Logger config must define a root logger")
             raise ValueError("Logger config must define a root logger")
 
         if "version" not in config:
+            print("[CRITICAL] Logger config must specify a version number")
             raise ValueError("Logger config must specify a version number")
 
         # Ensure the directory for the file handler exists.
@@ -261,6 +330,9 @@ class ProjectLoggerManager:
             )
 
         else:
+            print(
+                "[CRITICAL] Logger config must define a 'file' handler with a 'filename'"
+            )
             raise ValueError(
                 "Logger config must define a 'file' handler with a 'filename'"
             )
@@ -277,9 +349,11 @@ class ProjectLoggerManager:
             logging.config.dictConfig(config)
             logger = logging.getLogger(self.logger_name)
         except Exception as error:
+            print(f"[CRITICAL] Error configuring logger: {error}")
             raise ValueError(f"Error configuring logger: {error}") from error
 
         if not isinstance(logger, logging.Logger):
+            print(f"[CRITICAL] Expected Logger, got {type(logger).__name__}")
             raise TypeError(f"Expected Logger, got {type(logger).__name__}")
 
         print(f"[INFO] Logger '{self.logger_name}' configured successfully.")
@@ -288,11 +362,20 @@ class ProjectLoggerManager:
 
 def get_logger(
     name: str = "student_performance_indicator",
+    config_path: Path | str | None = None,
 ) -> ProjectLogger:
-    """Return the configured project logger."""
+    """Return the configured project logger that can be used for logging
+
+    Args:
+        name: Optional name of the logger to retrieve.
+        config_path: Optional path to the YAML configuration file.
+
+    Returns:
+        configured project logger instance.
+    """
 
     print(f"[INFO] Initializing logger '{name}'")
-    manager = ProjectLoggerManager(logger_name=name)
+    manager = ProjectLoggerManager(logger_name=name, config_path=config_path)
     return manager.logger
 
 
