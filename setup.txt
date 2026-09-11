@@ -36,3 +36,9 @@
    ```bash
    pre-commit install --hook-type pre-push
    ```
+
+5. **Set up ipykernel package**
+
+   ```bash
+   pre-commit install --hook-type pre-push
+   ```

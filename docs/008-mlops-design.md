@@ -52,9 +52,9 @@ All machine learning workflows must be executed through ZenML pipelines.
 
 #### 1. Data Ingestion & Labeling
 
-- Collect raw data from logs, databases, APIs, or sensors.  
-- Clean, annotate, and version datasets.  
-- **Output:** versioned datasets ready for feature engineering.  
+- Collect raw data from device, or KAGGLE if kaggle selected download using the url provided.  
+- Clean, annotate, and version datasets.
+- **Output:** versioned datasets ready for feature engineering.
 
 #### 2. Feature Engineering
 

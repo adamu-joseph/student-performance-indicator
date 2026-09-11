@@ -40,6 +40,8 @@ dependencies = [
     "bandit",
     "pip-audit",
     "zenml",
+    "ipykernel",
+    "types-requests"
 ]
 
 [tool.black]

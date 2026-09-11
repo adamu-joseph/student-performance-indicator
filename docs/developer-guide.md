@@ -24,6 +24,8 @@ Quick technical setup guide for the **Student Performance Indicator** project.
 - Use type hints where applicable
 - Write docstrings for functions and classes
 - Keep functions and classes focused and modular
+- use object oriented programming as the programming paradigm to keep codes clean and modular
+- use configuration driven architecture, to ensure reusability
 
 > Get the tools documentation at [code quality implementation](./003-code-quality-implementation.md)
 

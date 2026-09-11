@@ -29,6 +29,8 @@ Make sure you have the following installed:
 
 > Find detailed installation instructions in the [developer guide](docs/developer-guide.md)
 
+*Note*: Ensure to specify values for a config files attribute
+
 ---
 
 ## License
@@ -36,7 +38,6 @@ Make sure you have the following installed:
 MIT License
 
 Copyright (c) 2026 Adamu (Codex) Joseph
-
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
