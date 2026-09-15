@@ -1,126 +1,121 @@
 # Data Ingestion
 
-This document describes how the Student Performance Indicator project acquires, validates, cleans, and versions the raw dataset before it is passed to downstream transformation and training stages.
+This document describes the data acquisition, validation, cleaning, and versioning pipeline used by the Student Performance Indicator project. The ingestion layer is the first step in the ML workflow and ensures that only a valid, normalized dataset reaches the transformation and training stages.
 
 ## Overview
 
-The data ingestion workflow is implemented in `src/components/data_ingestion.py`. It is responsible for the following:
+The implementation lives in `src/components/data_ingestion.py`. It is responsible for:
 
-- loading a dataset from either a local device path or a Kaggle dataset URL
-- validating the dataset configuration from YAML
-- normalizing column names and removing unusable rows
-- ensuring the configured target column exists and is valid
-- writing a versioned CSV file plus a manifest JSON file to the processed data folder
+- loading raw data from either a local CSV file or a Kaggle dataset source
+- validating configuration values from YAML
+- checking that required schema elements such as the target column are present
+- cleaning invalid rows and normalizing field values
+- writing a versioned dataset artifact and a JSON manifest for reproducibility
 
-The ingestion component acts as the boundary between raw data and the ML pipeline. It does not perform feature engineering; it only prepares a clean, versioned, useable dataset for later processing.
+This stage does not perform feature engineering or model training. Its purpose is to convert raw data into a reliable tabular input for downstream tasks.
 
 ---
 
-## Components
+## Relevant project files
 
 | File | Responsibility |
-|---|---|
-| `src/components/data_ingestion.py` | Dataset acquisition, validation, cleaning, and versioning |
-| `config/data_ingestion_config.yaml` | Runtime configuration for data source and versioning |
-| `artifacts/data/processed/` | Versioned processed datasets and manifests |
+| --- | --- |
+| `src/components/data_ingestion.py` | Acquisition, validation, cleaning, and versioning logic |
+| `config/data_ingestion_config.yaml` | Runtime configuration for the data source and target column |
+| `artifacts/data/raw/` | Raw source dataset files |
+| `artifacts/data/processed/` | Versioned cleaned CSVs and metadata manifests |
 
 ---
 
-## Configuration model
+## Configuration contract
 
-The project uses a dataclass-based configuration object named `DataIngestionConfig`.
+The system loads its settings through `DataIngestionConfig.from_yaml()`. The configuration file is expected to follow the structure defined in `config/data_ingestion_config.yaml`.
 
-### Required settings
-
-The configuration must provide:
-
-- `source`
-- `input_path`
-- `kaggle_url`
-- `output_dir`
-- `dataset_version`
-
----
-
-### Validation rules
-
-`DataIngestionConfig.from_yaml()` validates the config before it is used:
-
-- the YAML file must exist and parse successfully
-- `config.source` must be either `device` or `kaggle`
-- the dataset config must contain the required keys
-- `data.target_column` must be present and non-empty
-- `data.type` must be present and non-empty
-- the file type list is normalized to lowercase values
-- all relative paths are resolved from the project root
-
-The helper `_resolve_path()` makes config paths project-root relative when the YAML uses a relative path.
-
----
-
-## Data source modes
-
-The ingestion component supports two acquisition modes.
-
-### 1. Local device mode
-
-When `source: device` is configured, the system reads the dataset directly from `input_path`.
-
-Required behavior:
-
-- the file must exist
-- the file extension must be supported
-- the current support list is `.csv`
-- the file is loaded with `pd.read_csv(input_path)`
-
-If the path is missing or the extension is unsupported, the component raises `FileNotFoundError` or `ValueError` respectively.
-
-### 2. Kaggle mode
-
-When `source: kaggle` is configured, the system attempts to download the dataset from the URL in `kaggle_url`.
-
-The implementation:
-
-- extracts the dataset slug from the Kaggle URL using a regex pattern
-- rewrites it to the Kaggle API download URL
-- requests the file with `requests.get(..., timeout=...)`
-- saves the raw download to a temporary file
-- reads either a CSV directly or the first CSV contained in a ZIP archive
-
-This is designed for Kaggle-hosted datasets where the final artifact may be downloaded as a direct CSV or a zipped bundle.
-
----
-
-## Dataset cleaning and labeling
-
-The `DataIngestion.clean_and_label()` method is responsible for preparing the raw dataset for the next stage.
-
-### Cleaning steps
-
-The method performs the following operations in order:
-
-1. Makes a copy of the input DataFrame
-2. Trims whitespace from all column names
-3. Drops rows where all values are missing
-4. Removes duplicate rows
-5. Resets the row index
-6. Verifies the configured target column is present
-7. Converts the target column to numeric values when the config requires it
-8. Drops rows where the target value is still missing after conversion
-9. Trips leading and trailing whitespace from object/string columns
-10. Rejects the dataset if it becomes empty
-
-### Target handling
-
-The configuration includes:
+### Current project YAML
 
 ```yaml
+config:
+  source: device
+  input_path: artifacts/data/raw/dataset.csv
+  kaggle_url: https://www.kaggle.com/datasets/whenamancodes/student-performance-indicator
+  output_dir: artifacts/data/processed
+  dataset_version: 2.0.0
+  request_timeout: 30
+
+supported_file_types:
+  - .csv
+
 data:
   target_column: exam_score
   type: int
 ```
 
-When `data.type` is an integer-like value, the code runs:
+### Supported configuration values
+
+The dataclass validates the following:
+
+- `config.source` must be either `device` or `kaggle`
+- `config.input_path` must exist when using local data
+- `config.kaggle_url` must be present for Kaggle downloads
+- `config.output_dir` is where processed artifacts are saved
+- `config.dataset_version` is used in the output filename
+- `data.target_column` must be non-empty and must exactly match the dataset schema
+- `data.type` defines how the target is cast prior to modeling
+- `supported_file_types` is normalized to lowercase values and defaults to `.csv` support
+
+Relative paths are resolved against the project root using `_resolve_path()` so configuration remains portable across environments.
+
+---
+
+## Data acquisition workflow
+
+The public entry point is `DataIngestion.acquire_data()`.
+
+### 1. Local-device mode
+
+When `source: device` is selected, the code performs a direct file check:
+
+- verifies the input file exists
+- verifies the file extension is accepted
+- loads the content with `pd.read_csv(input_path)`
+
+If the file is missing, a `FileNotFoundError` is raised. If the file extension is not supported, a `ValueError` is raised.
+
+### 2. Kaggle mode
+
+When `source: kaggle` is selected, the code does the following:
+
+1. converts the dataset page URL into a Kaggle API download URL using a regex-based helper
+2. sends a `requests.get()` request with a timeout
+3. writes the response body to a temporary file
+4. reads either:
+   - a direct CSV file, or
+   - the first CSV inside a ZIP archive
+
+This is useful because Kaggle dataset downloads may be packaged as archives rather than a single CSV file.
+
+---
+
+## Cleaning and validation logic
+
+The `DataIngestion.clean_and_label()` method prepares the data before it is stored or modeled.
+
+### Cleaning steps performed in order
+
+1. creates a working copy of the DataFrame
+2. strips whitespace from column names
+3. removes rows where all values are missing
+4. drops duplicate rows
+5. resets the index
+6. checks whether the configured target column exists
+7. converts the target column to numeric values when the config requires it
+8. removes rows whose target value is still missing after conversion
+9. strips whitespace from object columns
+10. raises an error if the cleaned dataset is empty
+
+### Target-column handling
+
+The target column is treated as the label for supervised learning. The project configuration supports a numeric target through `data.type`, and the implementation uses:
 
 ```python
 cleaned[self.config.target_column] = pd.to_numeric(
@@ -128,38 +123,36 @@ cleaned[self.config.target_column] = pd.to_numeric(
 )
 ```
 
-This is important because many student performance datasets may contain strings such as `"75"`, `"80.0"`, or blank values. The conversion step normalizes the target into a numeric column and removes unusable rows.
+This step is important because raw labels may arrive as strings like `"75"`, `"80.0"`, or empty values. The conversion keeps the dataset consistent and ensures that invalid labels are removed rather than silently carried into training.
 
 ---
 
-## Validation behavior
+## Validation behavior and failure modes
 
-The ingestion component fails fast when the input data does not meet the required contract.
+The ingestion component fails fast when the dataset or configuration is invalid. Typical reasons include:
 
-### Common validation failures
+- missing or unreadable YAML file
+- invalid YAML syntax
+- unsupported source value
+- missing required keys in the YAML config
+- absent target column in the dataset
+- empty dataset after cleaning
+- unsupported extension for local input files
+- Kaggle archive that does not contain a CSV file
 
-- missing config file
-- invalid YAML structure
-- unknown source value
-- missing required config keys
-- absent target column
-- dataset empty after cleaning
-- unsupported file extension for local data
-- Kaggle archive without a CSV file
-
-The system uses structured logging to record errors and makes these failures explicit with descriptive exceptions.
+Errors are logged using the project logger and raised as explicit exceptions so that the pipeline stops before bad data reaches downstream stages.
 
 ---
 
-## Dataset versioning
+## Versioned dataset output
 
-`DataIngestion.save_versioned_dataset()` writes the processed dataset to disk and produces a metadata manifest.
+After cleaning, `DataIngestion.save_versioned_dataset()` writes the data to disk and creates a manifest.
 
-### Output structure
+### Output directory
 
-The output directory is created automatically.
+The output directory is created automatically if it does not already exist.
 
-Example output:
+Example structure:
 
 ```text
 artifacts/data/processed/
@@ -167,51 +160,56 @@ artifacts/data/processed/
 └── student_performance_v2.0.0.json
 ```
 
-### Saved CSV
+### CSV output
 
-The cleaned DataFrame is written as a CSV file using:
+The cleaned DataFrame is saved with:
 
 ```python
 data.to_csv(dataset_path, index=False)
 ```
 
-This ensures the processed dataset is flattened and ready for downstream training or validation steps.
+This ensures the processed artifact is flat, reusable, and ready for later transformation or modeling steps.
 
 ### Manifest JSON
 
-The system writes a JSON metadata file containing:
+The metadata file captures:
+
+- dataset version
+- data source
+- target column name
+- number of rows
+- column names
+- SHA-256 checksum of the saved CSV
+
+Example schema:
 
 ```json
 {
   "dataset_version": "2.0.0",
   "source": "device",
   "target_column": "exam_score",
-  "row_count": 1000,
-  "columns": ["gender", "race_ethnicity", "parental_level_of_education", "lunch", "test_preparation_course", "exam_score"],
+  "row_count": 6607,
+  "columns": [
+    "Hours_Studied",
+    "Attendance",
+    "Parental_Involvement",
+    "Exam_Score"
+  ],
   "sha256": "..."
 }
 ```
 
-This manifest captures:
-
-- version identifier
-- data source used
-- target column name
-- final row count
-- schema columns
-- checksum for integrity tracking
-
-The checksum is computed using a SHA-256 hash of the saved dataset file.
+The checksum allows the project to verify that the processed dataset has not been modified unexpectedly after creation.
 
 ---
 
-## Internal helper functions
+## Helper functions
 
 ### `_kaggle_download_url()`
 
-This helper converts a Kaggle dataset page link into the API download URL pattern used by Kaggle's dataset endpoints.
+This helper converts a Kaggle dataset page URL into the API download URL pattern used by Kaggle.
 
-Example conversion:
+Example:
 
 ```python
 https://www.kaggle.com/datasets/whenamancodes/student-performance-indicator
@@ -225,21 +223,17 @@ https://www.kaggle.com/api/v1/datasets/download/whenamancodes/student-performanc
 
 ### `_read_downloaded_dataset()`
 
-This static method handles the downloaded artifact:
-
-- if the downloaded file is a ZIP, it opens it and reads the first CSV found inside
-- if the file is not a ZIP, it requires the file extension to be `.csv`
-- it raises clear errors when a Kaggle download is malformed or does not contain a CSV
+This static method reads the downloaded artifact and handles both CSV and ZIP formats. It extracts the first CSV inside a ZIP archive when needed and raises descriptive errors when the download is malformed.
 
 ### `_sha256()`
 
-This helper generates a SHA-256 digest for file integrity checks and version metadata.
+This helper computes the file checksum used in the manifest JSON for dataset integrity tracking.
 
 ---
 
-## Typical usage pattern
+## Typical pipeline usage
 
-The ingestion workflow is usually used in a pipeline like this:
+The normal lifecycle is:
 
 ```python
 from src.components.data_ingestion import DataIngestion
@@ -252,11 +246,24 @@ output_path = ingestion.save_versioned_dataset(clean_df)
 print(f"Prepared dataset saved to: {output_path}")
 ```
 
-This pattern keeps the lifecycle explicit:
+This sequence keeps the process clear and reproducible:
 
-1. acquire raw data
+1. load raw data from source
 2. validate and clean it
-3. persist a versioned dataset artifact
+3. store a versioned artifact
+4. pass the prepared dataset to the next pipeline stage
+
+---
+
+## Best practices
+
+- keep the YAML source and output paths consistent with the project structure
+- use `device` mode for local files and `kaggle` mode for remote access
+- confirm that `target_column` exactly matches the dataset schema
+- version the dataset whenever the raw source changes
+- review the manifest after generation to confirm row counts and checksums are valid
+
+The ingestion layer is intentionally lightweight and strict. This keeps the pipeline reliable and prevents invalid data from reaching modeling or evaluation.
 
 ---
 
