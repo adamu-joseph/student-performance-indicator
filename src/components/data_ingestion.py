@@ -75,12 +75,13 @@ class DataIngestionConfig:
             )
             raise ValueError(f"Invalid data ingestion YAML: {path}") from error
 
-        values = raw_config.get("config", raw_config)
+        values = raw_config.get("config")
         data = raw_config.get("data", {})
-        configured_types = values.get("supported_file_types", [".csv"])
 
         if not isinstance(values, dict):
             raise ValueError("Data ingestion configuration must be a mapping")
+
+        configured_types = values.get("supported_file_types") or [".csv"]
         missing = cls.required.difference(values)
         if missing:
             logger.error(
@@ -117,10 +118,10 @@ class DataIngestionConfig:
             kaggle_url=str(values["kaggle_url"]),
             output_dir=_resolve_path(values["output_dir"]),
             dataset_version=str(values["dataset_version"]),
-            target_column=str(values["data"]["target_column"]),
+            target_column=str(data["target_column"]),
             supported_file_types=supported_types,
             request_timeout=int(values.get("request_timeout", 30)),
-            dtype_target=values["data"]["type"],
+            dtype_target=data["type"],
         )
 
 
