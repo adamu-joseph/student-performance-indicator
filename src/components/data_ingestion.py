@@ -1,5 +1,6 @@
 """Data ingestion, cleaning, labeling, and dataset versioning."""
 
+# Import required modules
 from __future__ import annotations
 
 import hashlib
@@ -9,7 +10,7 @@ import tempfile
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import pandas as pd
 import requests
@@ -18,7 +19,6 @@ import yaml
 from utils.logger import get_logger
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config" / "data_ingestion_config.yaml"
 logger = get_logger()
 
 
@@ -26,6 +26,7 @@ logger = get_logger()
 class DataIngestionConfig:
     """Configuration required to acquire and version a dataset."""
 
+    # Define variables
     source: str
     input_path: Path
     kaggle_url: str
@@ -46,42 +47,61 @@ class DataIngestionConfig:
     )
 
     @classmethod
-    def from_yaml(
-        cls, config_path: Path | str = DEFAULT_CONFIG_PATH, key: str = "config"
-    ) -> DataIngestionConfig:
-        """Load and validate ingestion settings from YAML.
+    def from_yaml(cls, config_path: Path | str) -> DataIngestionConfig:
+        """Load and validate ingestion settings from from the config folder.
 
         "Args:
             config_path: Path to the YAML configuration file.
-            key: the required key to get from the configuration
 
         Returns:
             An instance of DataIngestionConfig with validated settings.
         """
 
         path = Path(config_path)
+        # Validate path exists
         if not path.exists():
             logger.error("Data ingestion configuration file not found", path=str(path))
             raise FileNotFoundError(
                 f"Data ingestion configuration file not found: {path}"
             )
 
+        # Load the config file
         try:
             with path.open("r", encoding="utf-8") as config_file:
-                raw_config = yaml.safe_load(config_file) or {}
+                raw_config: dict[str, Any] = yaml.safe_load(config_file) or {}
+
         except yaml.YAMLError as error:
             logger.error(
                 "Failed to parse data ingestion YAML configuration", path=str(path)
             )
-            raise ValueError(f"Invalid data ingestion YAML: {path}") from error
+            raise ValueError(f"Invalid data ingestion file.: {path}") from error
 
-        values = raw_config.get("config")
-        data = raw_config.get("data", {})
+        # Get the required keys from the file
+        try:
+            values = raw_config.get("config")
+            data = raw_config.get("data")
+        except KeyError as exc:
+            logger.error(
+                "Could not find required keys ['config', 'data'] in config file"
+            )
+            raise KeyError(
+                "Could not find required keys ['config', 'data'] in config file"
+            ) from exc
 
-        if not isinstance(values, dict):
-            raise ValueError("Data ingestion configuration must be a mapping")
+        if not isinstance(values, dict) or not isinstance(data, dict):
+            raise ValueError("Expected 'config' and 'data' to be mappings")
 
-        configured_types = values.get("supported_file_types") or [".csv"]
+        # confirm keys exists and validate type
+        if not values or not data:
+            logger.error(
+                "Empty values from 'config' or 'data' key in the data ingestion configuration."
+            )
+            raise ValueError(
+                "Empty values from 'config' or 'data' key in the data ingestion configuration."
+            )
+
+        # validate data from the config file
+        configured_types: list = values.get("supported_file_types", [])
         missing = cls.required.difference(values)
         if missing:
             logger.error(
@@ -101,10 +121,6 @@ class DataIngestionConfig:
             str(file_type).lower() for file_type in configured_types
         )
 
-        if not data:
-            logger.error("Missing 'data' key for data ingestion configuration")
-            raise ValueError("Missing 'data' key in data ingestion configuration")
-
         if not data["target_column"]:
             logger.error("Missing 'target_column' for data ingestion configuration")
             raise ValueError("Missing 'target_column' in data ingestion configuration")
@@ -112,16 +128,17 @@ class DataIngestionConfig:
             logger.error("Missing 'dtype_target' for data ingestion configuration")
             raise ValueError("Missing 'dtype_target' in data ingestion configuration")
 
+        # Return the configuration data
         return cls(
             source=source,
             input_path=_resolve_path(values["input_path"]),
             kaggle_url=str(values["kaggle_url"]),
             output_dir=_resolve_path(values["output_dir"]),
             dataset_version=str(values["dataset_version"]),
-            target_column=str(data["target_column"]),
+            target_column=str(values["data"]["target_column"]),
             supported_file_types=supported_types,
             request_timeout=int(values.get("request_timeout", 30)),
-            dtype_target=data["type"],
+            dtype_target=values["data"]["type"],
         )
 
 
@@ -135,7 +152,7 @@ def _resolve_path(value: str | Path) -> Path:
 class DataIngestion:
     """Acquire, prepare, and persist versioned student performance data."""
 
-    def __init__(self, config_path: Path | str = DEFAULT_CONFIG_PATH) -> None:
+    def __init__(self, config_path: Path | str) -> None:
         """Initialize ingestion from the configured YAML file.
 
         Args:
@@ -145,26 +162,28 @@ class DataIngestion:
             None
         """
 
+        # Acquire the validated configuration
         self.config = DataIngestionConfig.from_yaml(config_path)
 
     def acquire_data(self) -> pd.DataFrame:
-        """Load raw records from the configured device path or Kaggle
+        """Get the dataset from device path or Kaggle
 
         Returns:
             The acquired dataset as pd.Dataframe.
         """
 
+        # Get the dataset from device
         if self.config.source == "device":
             input_path = self.config.input_path
+
+            # confirm path exists
             if not input_path.exists():
-                logger.error(
-                    "Configured input dataset does not exist", path=str(input_path)
-                )
                 logger.error(f"Configured input dataset does not exist: {input_path}")
                 raise FileNotFoundError(
                     f"Configured input dataset does not exist: {input_path}"
                 )
 
+            # confirm dataset file is a supported file type
             if input_path.suffix.lower() not in self.config.supported_file_types:
                 logger.error(
                     f"Unsupported input file type: {input_path.suffix.lower()}"
@@ -173,17 +192,22 @@ class DataIngestion:
                     f"Unsupported input file type: {input_path.suffix.lower()}"
                 )
 
+            # Load dataset into pandas dataframe
             logger.info("Loading dataset from device", input_path=str(input_path))
             return pd.read_csv(input_path)
 
+        # Download the dataset from kaggle
         logger.info("Downloading dataset from Kaggle", url=self.config.kaggle_url)
         with tempfile.TemporaryDirectory() as temporary_directory:
             download_path = Path(temporary_directory) / "dataset.download"
             response = requests.get(
                 self._kaggle_download_url(), timeout=self.config.request_timeout
             )
+            # raise error if download not successful
             response.raise_for_status()
             download_path.write_bytes(response.content)
+
+            # Return pandas dataframe
             return self._read_downloaded_dataset(download_path)
 
     def clean_and_label(self, data: pd.DataFrame) -> pd.DataFrame:
@@ -204,9 +228,18 @@ class DataIngestion:
             raise ValueError(f"Dataset must contain '{self.config.target_column}'")
 
         if isinstance(self.config.dtype_target, int):
-            cleaned[self.config.target_column] = pd.to_numeric(
-                cleaned[self.config.target_column], errors="coerce"
+            logger.info(
+                f"Converting target column '{self.config.target_column}' to numeric values"
             )
+
+            try:
+                cleaned[self.config.target_column] = pd.to_numeric(
+                    cleaned[self.config.target_column], errors="coerce"
+                )
+            except ValueError as exc:
+                raise ValueError(
+                    f"Target column '{self.config.target_column}' contains an unconvertable data field"
+                ) from exc
 
         cleaned = cleaned.dropna(subset=[self.config.target_column]).copy()
         for column in cleaned.select_dtypes(include="object").columns:
@@ -224,6 +257,8 @@ class DataIngestion:
         self.config.output_dir.mkdir(parents=True, exist_ok=True)
         version = self.config.dataset_version
         dataset_path = self.config.output_dir / f"student_performance_v{version}.csv"
+
+        # write to file
         data.to_csv(dataset_path, index=False)
 
         manifest = {
@@ -248,6 +283,7 @@ class DataIngestion:
     def _kaggle_download_url(self) -> str:
         """Convert a Kaggle dataset page URL to its API download URL."""
 
+        # get url
         match = re.search(
             r"kaggle\.com/datasets/([^/]+/[^/?#]+)", self.config.kaggle_url
         )
@@ -266,6 +302,7 @@ class DataIngestion:
         )
         if zipfile.is_zipfile(download_path):
             with zipfile.ZipFile(download_path) as archive:
+                # get the csv file inside the zip file
                 csv_names = [
                     name for name in archive.namelist() if name.lower().endswith(".csv")
                 ]
@@ -277,19 +314,21 @@ class DataIngestion:
                         "Downloaded Kaggle archive does not contain a CSV file"
                     )
 
+                # Read the csv file as pandas dataframe
                 try:
                     with archive.open(csv_names[0]) as csv_file:
                         return pd.read_csv(csv_file)
                 except Exception as error:
                     logger.exception("Could not read downloaded kaggle dataset")
                     raise Exception(
-                        "Could not read downloaded Kaggle dataset"
+                        f"Could not read downloaded Kaggle dataset, {error}"
                     ) from error
 
         if download_path.suffix.lower() != ".csv":
             logger.error("Downloaded kaggle dataset file is not a CSV")
             raise ValueError("Downloaded Kaggle dataset file is not a CSV")
 
+        # Read normally if the downloaded path is not a csv file
         try:
             return pd.read_csv(download_path)
         except Exception as error:
