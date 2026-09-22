@@ -41,7 +41,8 @@ dependencies = [
     "pip-audit",
     "zenml",
     "ipykernel",
-    "types-requests"
+    "types-requests",
+    "mlflow"
 ]
 
 [tool.black]

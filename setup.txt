@@ -42,3 +42,10 @@
    ```bash
    pre-commit install --hook-type pre-push
    ```
+
+6. **Set up zenml and mlflow**
+
+   ```bash
+   zenml integration install mlflow -y
+   zenml init
+   ```

@@ -21,13 +21,27 @@ Quick technical setup guide for the **Student Performance Indicator** project.
 ### Code Quality
 
 - Follow PEP 8 style guidelines
-- Use type hints where applicable
-- Write docstrings for functions and classes
+- Use type hints on all function signatures (parameters and return types)
+- Write Google-style docstrings (with `Args:` / `Returns:`) for public functions and classes
 - Keep functions and classes focused and modular
-- use object oriented programming as the programming paradigm to keep codes clean and modular
-- use configuration driven architecture, to ensure reusability
+- Use object-oriented programming as the programming paradigm to keep code clean and modular
+- Use configuration-driven architecture to ensure reusability
 
 > Get the tools documentation at [code quality implementation](./003-code-quality-implementation.md)
+
+### Coding Patterns
+
+These patterns are established across the codebase — follow them when writing new code.
+
+- **Module layout:** module docstring → `from __future__ import annotations` → stdlib → third-party → project imports → constants → classes/functions → `__all__` export list
+- **Type hints:** add `from __future__ import annotations` in every module; use `X | Y` over `Union`, `X | None` over `Optional`
+- **Paths:** always use `pathlib.Path`, never `os.path`; define `PROJECT_ROOT = Path(__file__).resolve().parents[N]` at module level
+- **Config pattern:** frozen dataclasses with a `from_yaml()` classmethod that validates required fields via `ClassVar[frozenset]`
+- **Component pattern:** `__init__` takes a config path, delegates parsing to the config dataclass (`self.config = MyConfig.from_yaml(path)`)
+- **Structured logging:** use the project logger with keyword arguments — `logger.info("Loading data", path=str(p))`, not f-strings in the message
+- **Error handling:** log with structured context first, then raise a specific exception (`ValueError`, `FileNotFoundError`, etc.) with a descriptive message; chain with `from` when wrapping lower-level errors
+- **Naming:** `PascalCase` classes, `snake_case` functions, `_prefixed` private helpers, `UPPER_SNAKE_CASE` constants, `Config` suffix for config dataclasses
+- **Exports:** end every module with an explicit `__all__` listing public names only
 
 ### Security
 
