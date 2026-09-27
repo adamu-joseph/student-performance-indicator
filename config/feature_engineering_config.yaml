@@ -1,0 +1,79 @@
+config:
+  input_dir: artifacts/data/processed
+  output_dir: artifacts/data/features
+  target_column: Exam_Score
+  test_size: 0.2
+  random_state: 42
+
+# Encoding mappings derived from EDA cardinality analysis.
+# Ordinal columns have a natural Low→Medium→High progression;
+# binary columns are Yes/No or two-level categoricals.
+encoding:
+  ordinal:
+    Parental_Involvement:
+      Low: 0
+      Medium: 1
+      High: 2
+    Access_to_Resources:
+      Low: 0
+      Medium: 1
+      High: 2
+    Motivation_Level:
+      Low: 0
+      Medium: 1
+      High: 2
+    Family_Income:
+      Low: 0
+      Medium: 1
+      High: 2
+    Teacher_Quality:
+      Low: 0
+      Medium: 1
+      High: 2
+    Peer_Influence:
+      Negative: 0
+      Neutral: 1
+      Positive: 2
+    Parental_Education_Level:
+      High School: 0
+      College: 1
+      Postgraduate: 2
+    Distance_from_Home:
+      Far: 0
+      Moderate: 1
+      Near: 2
+  binary:
+    Extracurricular_Activities:
+      No: 0
+      Yes: 1
+    Internet_Access:
+      No: 0
+      Yes: 1
+    School_Type:
+      Public: 0
+      Private: 1
+    Learning_Disabilities:
+      No: 0
+      Yes: 1
+    Gender:
+      Female: 0
+      Male: 1
+
+# EDA found NaN groups in these columns score at or below the lowest named
+# category, suggesting missingness may carry predictive signal.
+imputation:
+  missing_indicator_columns:
+    - Teacher_Quality
+    - Parental_Education_Level
+    - Distance_from_Home
+
+scaling:
+  method: robust
+  columns:
+    - Hours_Studied
+    - Attendance
+    - Sleep_Hours
+    - Previous_Scores
+    - Tutoring_Sessions
+    - Physical_Activity
+
