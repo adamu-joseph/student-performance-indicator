@@ -7,6 +7,7 @@ config:
 
 # Encoding mappings derived from EDA cardinality analysis.
 # Ordinal columns have a natural Low→Medium→High progression;
+# Nominal columns do not have a natural Low→Medium→High progression
 # binary columns are Yes/No or two-level categoricals.
 encoding:
   ordinal:
@@ -30,18 +31,10 @@ encoding:
       Low: 0
       Medium: 1
       High: 2
-    Peer_Influence:
-      Negative: 0
-      Neutral: 1
-      Positive: 2
-    Parental_Education_Level:
-      High School: 0
-      College: 1
-      Postgraduate: 2
-    Distance_from_Home:
-      Far: 0
-      Moderate: 1
-      Near: 2
+  nominal:
+    Peer_Influence: Negative, Neutral, Positive
+    Parental_Education_Level: High School, College, Postgraduate
+    Distance_from_Home: Far, Moderate, Near
   binary:
     Extracurricular_Activities:
       No: 0

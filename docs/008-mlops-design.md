@@ -50,7 +50,7 @@ All machine learning workflows must be executed through ZenML pipelines.
 - Feedback and Retraining
 - Governance and Compliance
 
-#### 1. Data Ingestion & Labeling
+#### 1. Data Ingestion, Labeling and Validation
 
 - Collect raw data from device, or KAGGLE if kaggle selected download using the url provided.  
 - Clean, annotate, and version datasets.

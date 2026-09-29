@@ -27,18 +27,11 @@ The project will be considered successful if the trained model achieves acceptab
 
 ### Primary Metrics
 
-For regression:
+Regression:
 
 - Mean Absolute Error (MAE)
 - Root Mean Squared Error (RMSE)
 - R² Score (Coefficient of Determination)
-
-For classification:
-
-- Accuracy
-- Precision
-- Recall
-- F1-Score
 
 ### Success Criteria
 
