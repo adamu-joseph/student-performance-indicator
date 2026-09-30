@@ -11,46 +11,23 @@ config:
 # binary columns are Yes/No or two-level categoricals.
 encoding:
   ordinal:
-    Parental_Involvement:
-      Low: 0
-      Medium: 1
-      High: 2
-    Access_to_Resources:
-      Low: 0
-      Medium: 1
-      High: 2
-    Motivation_Level:
-      Low: 0
-      Medium: 1
-      High: 2
-    Family_Income:
-      Low: 0
-      Medium: 1
-      High: 2
-    Teacher_Quality:
-      Low: 0
-      Medium: 1
-      High: 2
+    Parental_Involvement: [Low, Medium, High]
+    Access_to_Resources: [Low, Medium, High]
+    Motivation_Level: [Low, Medium, High]
+    Family_Income: [Low, Medium, High]
+    Teacher_Quality: [Low, Medium, High]
+
   nominal:
-    Peer_Influence: Negative, Neutral, Positive
-    Parental_Education_Level: High School, College, Postgraduate
-    Distance_from_Home: Far, Moderate, Near
+    Peer_Influence: [Negative, Neutral, Positive]
+    Parental_Education_Level: [High School, College, Postgraduate]
+    Distance_from_Home: [Far, Moderate, Near]
+
   binary:
-    Extracurricular_Activities:
-      No: 0
-      Yes: 1
-    Internet_Access:
-      No: 0
-      Yes: 1
-    School_Type:
-      Public: 0
-      Private: 1
-    Learning_Disabilities:
-      No: 0
-      Yes: 1
-    Gender:
-      Female: 0
-      Male: 1
+    Extracurricular_Activities: {No: 0, Yes: 1}
+    Internet_Access: {No: 0, Yes: 1}
+    School_Type: {Public: 0, Private: 1}
+    Learning_Disabilities: {No: 0, Yes: 1}
+    Gender: {Female: 0, Male: 1}
 
 # EDA found NaN groups in these columns score at or below the lowest named
 # category, suggesting missingness may carry predictive signal.
