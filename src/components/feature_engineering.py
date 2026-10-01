@@ -13,7 +13,12 @@ from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, RobustScaler
+from sklearn.preprocessing import (
+    FunctionTransformer,
+    OneHotEncoder,
+    OrdinalEncoder,
+    RobustScaler,
+)
 
 from utils.logger import get_logger
 from utils.utils import save_object
@@ -202,8 +207,11 @@ class FeatureEngineering:
         transformers: list[tuple[str, Any, list[str]]] = []
 
         numeric_cols = [
-            col for col in self.config.scaling_columns if col in x_train.columns
+            col
+            for col in self.config.scaling_columns
+            if col in x_train.columns and col != "Tutoring_Sessions"
         ]
+
         if numeric_cols:
             numeric_pipeline = Pipeline(
                 [
@@ -215,6 +223,24 @@ class FeatureEngineering:
                 ]
             )
             transformers.append(("numeric", numeric_pipeline, numeric_cols))
+
+        if "Tutoring_Sessions" in x_train.columns:
+            tutoring_pipeline = Pipeline(
+                [
+                    (
+                        "imputer",
+                        SimpleImputer(strategy="median"),
+                    ),  # handles missing values
+                    (
+                        "log",
+                        FunctionTransformer(
+                            func=np.log1p, inverse_func=np.expm1, validate=True
+                        ),
+                    ),  # reduce skewness
+                    ("scaler", RobustScaler()),  # scales the data
+                ]
+            )
+            transformers.append(("tutoring", tutoring_pipeline, ["Tutoring_Sessions"]))
 
         ordinal_cols = [
             col for col in self.config.ordinal_mappings if col in x_train.columns
