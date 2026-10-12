@@ -94,13 +94,15 @@ class FeatureEngineeringConfig:
         # For ordinal features: keep explicit order
         ordinal_raw = encoding.get("ordinal", {})
         ordinal_mappings = {
-            col: list(mapping.keys()) for col, mapping in ordinal_raw.items()
+            col: list(mapping.keys()) if isinstance(mapping, dict) else list(mapping)
+            for col, mapping in ordinal_raw.items()
         }
 
         # For nominal features: keep categories as strings (no numeric mapping)
         nominal_raw = encoding.get("nominal", {})
         nominal_mappings = {
-            col: list(mapping.keys()) for col, mapping in nominal_raw.items()
+            col: list(mapping.keys()) if isinstance(mapping, dict) else list(mapping)
+            for col, mapping in nominal_raw.items()
         }
 
         binary_raw = encoding.get("binary", {})
@@ -118,7 +120,7 @@ class FeatureEngineeringConfig:
             nominal_mappings=nominal_mappings,
             binary_mappings=binary_mappings,
             scaling_columns=tuple(scaling.get("columns", [])),
-            scaling_method=str(scaling.get("method", "standard")),
+            scaling_method=str(scaling.get("method")),
             missing_indicator_columns=tuple(
                 imputation.get("missing_indicator_columns", [])
             ),
@@ -176,6 +178,7 @@ class FeatureEngineering:
             train_size=len(x_train),
             test_size=len(x_test),
         )
+
         return x_train, x_test, y_train, y_test
 
     def create_missing_indicators(self, data: pd.DataFrame) -> pd.DataFrame:
@@ -212,6 +215,24 @@ class FeatureEngineering:
             if col in x_train.columns and col != "Tutoring_Sessions"
         ]
 
+        # Map string names to actual scaler classes
+        scaler_map = {
+            "functiontransformer": FunctionTransformer,
+            "onehotencoder": OneHotEncoder,
+            "ordinalencoder": OrdinalEncoder,
+            "robustscaler": RobustScaler,
+        }
+
+        # Get the scaler class from the config string
+        scaler_class = scaler_map.get(self.config.scaling_method.lower())
+
+        if scaler_class is None:
+            logger.error("Unknown scaling method", method=self.config.scaling_method)
+            raise ValueError(f"Unknown scaling method: {self.config.scaling_method}")
+
+        # Instantiate the scaler
+        scaler = scaler_class()
+
         if numeric_cols:
             numeric_pipeline = Pipeline(
                 [
@@ -219,10 +240,13 @@ class FeatureEngineering:
                         "imputer",
                         SimpleImputer(strategy="median"),
                     ),  # handles missing values
-                    ("scaler", RobustScaler()),  # scales the data
+                    ("scaler", scaler),  # scales the data
                 ]
             )
             transformers.append(("numeric", numeric_pipeline, numeric_cols))
+            logger.info(
+                "Numeric features pipeline initialized", numeric_count=len(numeric_cols)
+            )
 
         if "Tutoring_Sessions" in x_train.columns:
             tutoring_pipeline = Pipeline(
@@ -237,10 +261,16 @@ class FeatureEngineering:
                             func=np.log1p, inverse_func=np.expm1, validate=True
                         ),
                     ),  # reduce skewness
-                    ("scaler", RobustScaler()),  # scales the data
+                    ("scaler", scaler),  # scales the data
                 ]
             )
             transformers.append(("tutoring", tutoring_pipeline, ["Tutoring_Sessions"]))
+            logger.info("Tutoring_Sessions pipeline initialized")
+
+        else:
+            logger.critical(
+                "Tutoring_Sessions column missing from training data; cannot apply log transformation"
+            )
 
         ordinal_cols = [
             col for col in self.config.ordinal_mappings if col in x_train.columns
@@ -263,6 +293,9 @@ class FeatureEngineering:
                 ]
             )
             transformers.append(("ordinal", ordinal_pipeline, ordinal_cols))
+            logger.info(
+                "Ordinal features pipeline initialized", ordinal_count=len(ordinal_cols)
+            )
 
         # Collect nominal columns that exist in the training set
         nominal_cols = [
@@ -293,6 +326,9 @@ class FeatureEngineering:
 
             # Add to transformers list
             transformers.append(("nominal", nominal_pipeline, nominal_cols))
+            logger.info(
+                "Nominal features pipeline initialized", nominal_count=len(nominal_cols)
+            )
 
         binary_cols = [
             col for col in self.config.binary_mappings if col in x_train.columns
@@ -316,6 +352,9 @@ class FeatureEngineering:
                 ]
             )
             transformers.append(("binary", binary_pipeline, binary_cols))
+            logger.info(
+                "Binary features pipeline initialized", binary_count=len(binary_cols)
+            )
 
         indicator_cols = [
             f"{col}_missing"
@@ -324,6 +363,10 @@ class FeatureEngineering:
         ]
         if indicator_cols:
             transformers.append(("indicators", "passthrough", indicator_cols))
+            logger.info(
+                "Missing indicator features included",
+                indicator_count=len(indicator_cols),
+            )
 
         preprocessor = ColumnTransformer(
             transformers=transformers,
@@ -333,7 +376,9 @@ class FeatureEngineering:
         logger.info(
             "Preprocessor built",
             numeric_count=len(numeric_cols),
+            kurt_count=len(["Tutoring_Sessions"]),
             ordinal_count=len(ordinal_cols),
+            nominal_count=len(nominal_cols),
             binary_count=len(binary_cols),
             indicator_count=len(indicator_cols),
         )
@@ -378,12 +423,7 @@ class FeatureEngineering:
             List of feature names in output column order.
         """
 
-        names: list[str] = []
-        for name, _transformer, cols in preprocessor.transformers_:
-            if name == "remainder":
-                continue
-            names.extend(cols)
-        return names
+        return list(preprocessor.get_feature_names_out())
 
     def save_artifacts(
         self,

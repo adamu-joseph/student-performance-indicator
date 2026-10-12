@@ -23,11 +23,11 @@ encoding:
     Distance_from_Home: [Far, Moderate, Near]
 
   binary:
-    Extracurricular_Activities: {No: 0, Yes: 1}
-    Internet_Access: {No: 0, Yes: 1}
-    School_Type: {Public: 0, Private: 1}
-    Learning_Disabilities: {No: 0, Yes: 1}
-    Gender: {Female: 0, Male: 1}
+    Extracurricular_Activities: [No, Yes]
+    Internet_Access: [No, Yes]
+    School_Type: [Public, Private]
+    Learning_Disabilities: [No, Yes]
+    Gender: [Female, Male]
 
 # EDA found NaN groups in these columns score at or below the lowest named
 # category, suggesting missingness may carry predictive signal.
@@ -38,7 +38,7 @@ imputation:
     - Distance_from_Home
 
 scaling:
-  method: robust
+  method: RobustScaler
   columns:
     - Hours_Studied
     - Attendance
