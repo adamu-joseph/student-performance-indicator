@@ -8,7 +8,7 @@ Educational institutions and students often struggle to identify students who ma
 
 This project aims to develop a Machine Learning model capable of predicting a student's final grade based on various academic, behavioral, and demographic factors.
 
-However: implementation of every feature of this project cannot be done in the first initial version. Therefore this project will be done in phases/versions with each fulfilling a new part of the project business metrics.
+However, implementation of every feature of this project cannot be done in the first initial version. Therefore this project will be done in phases/versions with each fulfilling a new part of the project business metrics.
 
 ## Business Objective
 
@@ -127,5 +127,5 @@ The model will use student-related features as input variables.
 
 Students grade
 
-**Last Updated:** 2026-09
+**Last Updated:** 25-10-2026
 **Maintainer:** Adamu Joseph Ohigwere

@@ -224,7 +224,7 @@ class FeatureEngineering:
         }
 
         # Get the scaler class from the config string
-        scaler_class = scaler_map.get(self.config.scaling_method.lower())
+        scaler_class = scaler_map.get(self.config.scaling_method.lower(), None)
 
         if scaler_class is None:
             logger.error("Unknown scaling method", method=self.config.scaling_method)

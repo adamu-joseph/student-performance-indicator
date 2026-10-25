@@ -34,19 +34,6 @@ Black is an opinionated code formatter that automatically formats Python code to
 - **Time-saving:** Developers focus on logic, not formatting
 - **Readability:** Consistent formatting makes code easier to read
 
-### Usage
-
-```bash
-# Format a single file
-black src/components/data_ingestion.py
-
-# Format entire project
-black src/
-
-# Check formatting without changes (dry-run)
-black --check src/
-```
-
 ---
 
 ## 2. Ruff - Fast Python Linter
@@ -68,28 +55,6 @@ Ruff is an extremely fast Python linter that detects code issues, logic bugs, an
 - **Bug Detection:** Focuses on actual errors and logical issues
 - **Low false positives:** Accurate error detection
 - **Actionable feedback:** Clear error messages and solutions
-
-### Usage
-
-```bash
-# Lint a single file
-ruff check src/components/data_ingestion.py
-
-# Lint entire project
-ruff check src/
-
-# Fix auto-fixable issues
-ruff check --fix src/
-
-# Show detailed error information
-ruff check --show-source src/
-```
-
-### Common Checks
-
-- `F` - PyFlakes errors (undefined names, unused imports)
-- `B` - Bugbear (potential bugs and design problems)
-- `UP` - Upgrades (modernize Python syntax)
 
 ---
 
@@ -113,30 +78,6 @@ MyPy performs static type checking on Python code. It analyzes type hints in you
 - **Documentation:** Type hints serve as inline documentation
 - **IDE Support:** Better autocomplete and error highlighting
 - **Refactoring Safety:** Type checking helps ensure refactoring doesn't break code
-
-### Usage
-
-```bash
-# Check a single file
-mypy src/components/data_ingestion.py
-
-# Check entire project
-mypy src/
-
-# Strict mode (most strict checking)
-mypy --strict src/
-
-# Show error codes
-mypy --show-error-codes src/
-```
-
-### Type Hints Example
-
-```python
-def load_data(file_path: str, sep: str = ",") -> pd.DataFrame:
-    """Load data from CSV file."""
-    return pd.read_csv(file_path, sep=sep)
-```
 
 ---
 
@@ -287,5 +228,5 @@ x = func()  # type: ignore[return-value]
 
 ---
 
-**Last Updated:** 2026-09-01  
+**Last Updated:** 23rd-10-2026
 **Maintainer:** Adamu Joseph Ohigwere

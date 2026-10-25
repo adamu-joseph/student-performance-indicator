@@ -25,7 +25,7 @@ Quick technical setup guide for the **Student Performance Indicator** project.
 - Write Google-style docstrings (with `Args:` / `Returns:`) for public functions and classes
 - Keep functions and classes focused and modular
 - Use object-oriented programming as the programming paradigm to keep code clean and modular
-- Use configuration-driven architecture to ensure reusability
+- Use yaml configuration-driven architecture to ensure reusability
 
 > Get the tools documentation at [code quality implementation](./003-code-quality-implementation.md)
 

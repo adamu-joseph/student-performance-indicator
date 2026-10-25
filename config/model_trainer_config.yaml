@@ -1,0 +1,28 @@
+config:
+  # Must match FeatureEngineeringConfig.output_dir.
+  input_dir: artifacts/data/features
+
+  # FeatureEngineering.save_artifacts() stores the fitted transformer here.
+  # It is logged to the same MLflow run for use by the inference workflow.
+  preprocessor_path: artifacts/data/features/preprocessor.dill
+
+  # Set this to the tracking server URI used by your environment.
+  # For a local MLflow server, the default port is commonly 5000.
+  tracking_uri: http://127.0.0.1:5000
+
+  experiment_name: student-performance-indicator
+  active_model: knn_regressor
+  registered_model_name: student-performance-regressor
+
+  # Add future estimators here and select one through active_model.
+  models:
+    knn_regressor:
+      class: KNeighborsRegressor
+      params:
+        n_neighbors: 5
+        weights: distance
+        algorithm: auto
+        leaf_size: 30
+        p: 2
+        metric: minkowski
+        n_jobs: -1
