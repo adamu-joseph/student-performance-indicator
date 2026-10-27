@@ -19,6 +19,7 @@ import yaml
 from utils.logger import get_logger
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 logger = get_logger()
 
 

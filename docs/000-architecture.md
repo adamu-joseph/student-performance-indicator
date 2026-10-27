@@ -22,7 +22,6 @@ The **Student Performance Indicator** is a machine learning project designed to 
 - End-to-end ML pipeline implementation
 - Exploratory Data Analysis (EDA) via Jupyter notebooks
 - Multiple data transformation strategies
-- CatBoost model training and evaluation
 - Prediction pipeline for inference
 - Modular, extensible architecture
 

@@ -26,3 +26,12 @@ config:
         p: 2
         metric: minkowski
         n_jobs: -1
+
+    linear_regression:
+      class: LinearRegression
+      params:
+        fit_intercept: true
+        copy_X: true
+        tol: 0.000001
+        n_jobs: null
+        positive: false

@@ -12,6 +12,7 @@ import numpy as np
 import yaml
 from mlflow.models import infer_signature
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.linear_model import LinearRegression
 
 from utils.logger import get_logger
 
@@ -23,6 +24,7 @@ logger = get_logger()
 # Add future supported estimator classes to this registry.
 MODEL_REGISTRY = {
     "KNeighborsRegressor": KNeighborsRegressor,
+    "LinearRegression": LinearRegression
 }
 
 
